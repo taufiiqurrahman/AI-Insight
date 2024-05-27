@@ -1,0 +1,20 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Contractor Performance Analysis</title>
+</head>
+<body>
+    <h1>Contractor Performance Analysis</h1>
+    <div id="plot"></div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        fetch('/plot')
+        .then(response => response.json())
+        .then(data => {
+            var plot_data = JSON.parse(data);
+            Plotly.newPlot('plot', plot_data.data, plot_data.layout);
+        });
+    </script>
+</body>
+</html>

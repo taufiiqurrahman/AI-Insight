@@ -1,9 +1,13 @@
-import pandas as pd 
+
+from flask import Flask, jsonify
+import pandas as pd
 import plotly.express as px
 import os
 
+app = Flask(__name__)
+
 def process_data_and_generate_plots():
-    df = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'Data boq.csv'), encoding='utf-8')
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'data', 'Data boq.csv'), encoding='utf-8')
 
     vendor_mapping = {
         'PT. Berca Engineering': 'PT Berca Engineering',
@@ -23,24 +27,21 @@ def process_data_and_generate_plots():
     boq_df['month'] = pd.to_datetime(boq_df['month'])
     boq_df['month'] = boq_df['month'].dt.strftime('%B %Y')
 
-    output_dir = os.path.join(os.path.dirname(__file__), '..', 'output_graphs')
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
     vendors = [
-        ('PT Vendor Al Fatih', 'fig_al_fatih.html'),
-        ('PT Vendor Sejati', 'fig_sejati.html'),
-        ('PT Berca Engineering', 'fig_berca.html'),
-        ('PT Fadil Jaya Abadi', 'fig_fadiljaya.html'),
-        ('PT Jaya Abadi', 'fig_jayaabadi.html'),
-        ('PT Kaliraya Sari', 'fig_kalirayasari.html'),
-        ('PT Yaop Yaya Op Op', 'fig_yaopyaya.html'),
-        ('SCM', 'fig_scm.html'),
-        ('Universal Export', 'fig_universal.html'),
-        ('PT Yes', 'fig_yes.html')
+        'PT Vendor Al Fatih',
+        'PT Vendor Sejati',
+        'PT Berca Engineering',
+        'PT Fadil Jaya Abadi',
+        'PT Jaya Abadi',
+        'PT Kaliraya Sari',
+        'PT Yaop Yaya Op Op',
+        'SCM',
+        'Universal Export',
+        'PT Yes'
     ]
 
-    for vendor_name, filename in vendors:
+    results = {}
+    for vendor_name in vendors:
         vendor_data = boq_df[boq_df['vendor_name'] == vendor_name]
         fig = px.scatter(vendor_data, x='month', y=['plan_cost', 'actual_cost'], 
                          color_discrete_map={'plan_cost': 'blue', 'actual_cost': 'green'},
@@ -50,7 +51,14 @@ def process_data_and_generate_plots():
         fig.update_yaxes(tickprefix='IDR ')
         fig.add_hline(y=(vendor_data['plan_cost'].max() + vendor_data['actual_cost'].max()) / 2, 
                       line=dict(color='red', dash='dash'), name='Max Threshold')
-        fig.write_html(os.path.join(output_dir, filename))
+        results[vendor_name] = fig.to_json()
+    
+    return results
 
-if __name__ == "__main__":
-    process_data_and_generate_plots()
+@app.route('/plot')
+def plot():
+    plots = process_data_and_generate_plots()
+    return jsonify(plots)
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0')
